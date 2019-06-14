@@ -16,13 +16,10 @@
  */
 package com.hortonworks.processors.opc;
 
-import org.apache.nifi.util.FlowFileValidator;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 
 public class TestConsumeOPCEvents {
 
@@ -35,14 +32,13 @@ public class TestConsumeOPCEvents {
 
     @Test
     public void testProcessor() {
-    	//testRunner.setRunSchedule(60000);
-    	testRunner.setProperty(ConsumeOPCEvents.OPC_SERVER_URL, "opc.tcp://ec2-18-204-206-64.compute-1.amazonaws.com:32402");
-    	testRunner.setProperty(ConsumeOPCEvents.IDENTIFIER,"Ramp1");
-    	testRunner.setProperty(ConsumeOPCEvents.NAME_SPACE_INDEX,"5");
-    	testRunner.setProperty(ConsumeOPCEvents.SUB_DUR,"5");
-    	testRunner.run();
-    	assert(testRunner.getFlowFilesForRelationship(ConsumeOPCEvents.SUCCESS).size() == 1);
-    	
+        // testRunner.setRunSchedule(60000);
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.setProperty(ConsumeOPCEvents.OPC_SERVER_URL, "opc.tcp://HW13386.local:53530/OPCUA/SimulationServer");
+        testRunner.setProperty(ConsumeOPCEvents.NAME_SPACE_INDEX, "5");
+        testRunner.setProperty(ConsumeOPCEvents.SUB_DUR, "5");
+        testRunner.run(1);
+        assert (testRunner.getFlowFilesForRelationship(ConsumeOPCEvents.SUCCESS).size() == 1);
 
     }
 

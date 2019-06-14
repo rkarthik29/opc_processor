@@ -1,17 +1,16 @@
 package com.hortonworks.processors.opc.utils;
 
+import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
+
 import java.io.File;
 import java.security.Security;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig;
 import org.eclipse.milo.opcua.stack.client.UaTcpStackClient;
-import org.eclipse.milo.opcua.stack.core.Stack;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
@@ -19,9 +18,7 @@ import org.eclipse.milo.opcua.stack.core.util.CryptoRestrictions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
-
-public class ClientExampleRunner extends Thread{
+public class ClientExampleRunner extends Thread {
 
     static {
         CryptoRestrictions.remove();
@@ -33,7 +30,6 @@ public class ClientExampleRunner extends Thread{
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final CompletableFuture<OpcUaClient> future = new CompletableFuture<>();
-
 
     private final ClientExample clientExample;
     private final boolean serverRequired;
@@ -53,48 +49,39 @@ public class ClientExampleRunner extends Thread{
         if (!securityTempDir.exists() && !securityTempDir.mkdirs()) {
             throw new Exception("unable to create security dir: " + securityTempDir);
         }
-        LoggerFactory.getLogger(getClass())
-            .info("security temp dir: {}", securityTempDir.getAbsolutePath());
-        
+        LoggerFactory.getLogger(getClass()).info("security temp dir: {}", securityTempDir.getAbsolutePath());
+
         KeyStoreLoader loader = new KeyStoreLoader().load(securityTempDir);
-        
+
         SecurityPolicy securityPolicy = clientExample.getSecurityPolicy();
 
         EndpointDescription[] endpoints;
 
         try {
-            endpoints = UaTcpStackClient
-                .getEndpoints(clientExample.getEndpointUrl())
-                .get();
+            endpoints = UaTcpStackClient.getEndpoints(clientExample.getEndpointUrl()).get();
         } catch (Throwable ex) {
             // try the explicit discovery endpoint as well
             String discoveryUrl = clientExample.getEndpointUrl() + "/discovery";
             logger.info("Trying explicit discovery URL: {}", discoveryUrl);
-            endpoints = UaTcpStackClient
-                .getEndpoints(discoveryUrl)
-                .get();
+            endpoints = UaTcpStackClient.getEndpoints(discoveryUrl).get();
         }
 
         EndpointDescription endpoint = Arrays.stream(endpoints)
-            .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri()))
-            .findFirst().orElseThrow(() -> new Exception("no desired endpoints returned"));
+                .filter(e -> e.getSecurityPolicyUri().equals(securityPolicy.getSecurityPolicyUri())).findFirst()
+                .orElseThrow(() -> new Exception("no desired endpoints returned"));
 
         logger.info("Using endpoint: {} [{}]", endpoint.getEndpointUrl(), securityPolicy);
 
         OpcUaClientConfig config = OpcUaClientConfig.builder()
-            .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
-            .setApplicationUri("urn:eclipse:milo:examples:client")
-            .setCertificate(loader.getClientCertificate())
-            .setKeyPair(loader.getClientKeyPair())
-            .setEndpoint(endpoint)
-            .setMaxResponseMessageSize(uint(10))
-            .setIdentityProvider(clientExample.getIdentityProvider())
-            .setRequestTimeout(uint(5000000))
-            .build();
+                .setApplicationName(LocalizedText.english("eclipse milo opc-ua client"))
+                .setApplicationUri("urn:eclipse:milo:examples:client").setCertificate(loader.getClientCertificate())
+                .setKeyPair(loader.getClientKeyPair()).setEndpoint(endpoint).setMaxResponseMessageSize(uint(10))
+                .setIdentityProvider(clientExample.getIdentityProvider()).setRequestTimeout(uint(5000000)).build();
 
         return new OpcUaClient(config);
     }
 
+    @Override
     public void run() {
         try {
             OpcUaClient client = createClient();
@@ -104,7 +91,7 @@ public class ClientExampleRunner extends Thread{
                 }
 
             });
-           // while(true){
+            // while(true){
             try {
                 clientExample.run(client, future);
                 future.get();
@@ -112,7 +99,7 @@ public class ClientExampleRunner extends Thread{
                 logger.error("Error running client example: {}", t.getMessage(), t);
                 future.completeExceptionally(t);
             }
-           // }
+            // }
         } catch (Throwable t) {
             logger.error("Error getting client: {}", t.getMessage(), t);
 
